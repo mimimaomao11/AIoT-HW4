@@ -1,0 +1,10 @@
+# 忽略 Python 的快取檔案
+__pycache__/
+
+# 忽略自動生成的 embedding 檔案
+/embeddings/*.bin
+/embeddings/*.npy
+
+# 忽略虛擬環境資料夾
+/rag_env/
+/venv/
