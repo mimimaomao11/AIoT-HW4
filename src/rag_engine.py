@@ -4,6 +4,7 @@ import streamlit as st
 from sentence_transformers import SentenceTransformer
 import faiss
 from openai import OpenAI
+import streamlit as st
 
 # -----------------------------
 # OpenAI API 金鑰設定
@@ -14,7 +15,8 @@ EMBEDDING_DIR = os.path.join(BASE_DIR, "embeddings")
 # 初始化 OpenAI client
 # 為了部署到 Streamlit Cloud，我們優先從 st.secrets 讀取金鑰
 # 如果在本地執行且 st.secrets 中沒有，它會報錯，這提醒我們本地需要設定
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+openai_api_key = os.environ["OPENAI_API_KEY"]
+client = OpenAI(api_key=openai_api_key)
 
 class RAGEngine:
     def __init__(self, model_name="all-MiniLM-L6-v2"):
