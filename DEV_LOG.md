@@ -1,1 +1,131 @@
-📝 RAG LLM 機車保險知識型助手：開發日誌此日誌記錄了專案從零開始建置，歷經爬蟲失敗、本地 LLM 選型、套件版本衝突解決，以及最終部署準備的完整過程。📅 2025.11.28 - 專案啟動與核心功能開發狀態主題詳情來源新增專案結構與環境初始化確定專案資料夾結構：rag_insurance/ (後續改為 HW4/)，包含 data/ (文章)、embeddings/ (向量庫)、src/ (程式碼) 等。111111111新增初始爬蟲腳本新增 src/crawler.py 腳本，原定目標是自動爬取國泰產險機車保險知識文章，並示範使用 requests + BeautifulSoup。222222222新增文章預處理新增 src/preprocess.py 腳本，負責 HTML 清洗、Token 計數 (tiktoken) 與文章分塊 (Chunking)，建議大小為 300-500 Tokens。3333新增向量資料庫建置新增 src/build_vector_db.py，支援 OpenAI/HuggingFace Embedding 模型，以及 Chroma/FAISS 向量庫建置。4444新增RAG 引擎與系統提示新增 src/rag_engine.py，包含完整的 RAG 流程、Retriever (Top-K) 及嚴格的 System Prompt 規則。5555555555555555新增Streamlit 互動介面新增 src/app.py，使用 Streamlit 建立互動式 UI，方便測試 RAG 系統。6666變更專案路徑調整根據使用者專案路徑，將專案結構從 rag_insurance/ 變更為 HW4/。7777修正爬蟲失敗與解決方案錯誤: 初始爬蟲因網站使用 JavaScript 動態載入文章而失敗（抓到 0 篇文章）。修正: 採用 手動建立示範文章 (30 篇 .txt 檔案於 data/raw_html/)，並移除爬蟲步驟，以確保知識來源穩定性。888888888修正langchain 版本兼容問題錯誤: ModuleNotFoundError: No module named 'langchain.text_splitter'。問題源於 LangChain 1.x 版本移除了舊版模組路徑。修正: 嘗試降版至 LangChain 0.0.153 或使用 RecursiveCharacterTextSplitter 失敗後，最終決定 移除所有 LangChain 依賴，改用純 Python + HuggingFace + FAISS。9999999999999999變更本地 LLM 選型專案從 OpenAI API 轉為 本地 LLM，以實現全本地化 RAG。初始使用 uer/gpt2-chinese-cluecorpussmall，後續因模型生成品質不佳及亂碼問題，改用 ChatGLM-6B (或 -int4)。10101010101010101010101010101010修正路徑與套件衝突錯誤: DATA_DIR = "../data/raw_html/" 找不到路徑；AttributeError: ChatGLMTokenizer has no attribute vocab_size；ERROR: Failed building wheel for tokenizers。修正: 採用 os.path.abspath(_file_) 確保路徑絕對定位；改用 ChatGLM 官方 chat_model.chat() API，避免使用 AutoTokenizer 或 pipeline；調整 requirements.txt 版本並加入 sentencepiece。11111111111111111111111111111111修正最終模型選型與部署準備錯誤: ChatGLM 6B 模型難以在 Streamlit 雲端部署且有 Gated Repo (401) 授權問題。修正: 替換為 公開、輕量化、非 Gated 的 3B 模型 (如 TheBloke/guanaco-3B-GPTQ 或 NousResearch/Nous-Hermes-3B-GPTQ)，確保線上部署可行。121212121212121212新增部署準備新增 requirements.txt 檔案，鎖定專案所有依賴套件，並使用 faiss-cpu 以符合 Streamlit Cloud 環境。你的日誌變更API 金鑰讀取根據使用者要求，src/rag_engine.py 的金鑰讀取方式從 st.secrets 改回依賴本地的 .env 檔案 (用於本地開發)。你的日誌新增專案文件新增了完整的 README.md 專案說明文件，詳細介紹了專案功能、技術棧、如何在本地端執行以及專案結構。你的日誌新增Git 上傳指令提供了將專案上傳到 GitHub 的完整 git 指令教學。你的日誌修正Git rejected 錯誤解決 git push 時發生的 rejected 錯誤，透過 git pull origin main 合併遠端變更後再推送。你的日誌修正Git unrelated histories 錯誤解決 git pull 時發生的 fatal: refusing to merge unrelated histories 錯誤，使用 git pull origin main --allow-unrelated-histories 強制合併。你的日誌修正Git Merge Conflict解決合併後 README.md 的內容衝突，手動編輯並提交解決。你的日誌修正Git 大檔案上傳失敗解決 GH001: Large files detected 錯誤，更新 .gitignore 排除 /rag_env/ 和 /venv/，並執行 git rm -r --cached rag_env 移除追蹤。你的日誌修正OpenAI Quota Exceeded (2025-11-28)問題描述: 呼叫 gpt-3.5-turbo 報「超過額度」錯誤。解決方案: 將 src/rag_engine.py 中的模型更換為 gpt-4o-mini (高性價比模型)，以規避特定模型額度或用量限制。你的日誌
+🚀 機車保險知識型助手 (RAG + 本地 LLM) - 開發日誌
+1. 專案目標與最終技術棧
+
+專案主題：機車保險知識型助手 。
+
+
+目標：根據已建立的知識庫，結合 LLM 提供正確、清晰、易理解的回答 。
+
+
+最終 LLM 模型：輕量化公開 3B GPTQ 模型（例如：TheBloke/guanaco-3B-GPTQ），以確保線上部署的可行性 。
+
+
+Embedding 模型：sentence-transformers/all-MiniLM-L6-v2 。
+
+
+
+向量資料庫：FAISS 。
+
+
+
+RAG 框架：純 Python 實現，不依賴 LangChain 。
+
+
+介面：Streamlit.app 。
+
+2. 開發階段與核心問題解決
+階段 I：環境與爬蟲問題
+
+專案結構建立：初始化專案結構 HW4/，包含 data/、embeddings/ 和 src/ 資料夾 。
+
+
+
+爬蟲失敗：嘗試使用 requests + BeautifulSoup 爬取國泰產險知識文章失敗（抓到 0 篇文章），因網站內容為 JavaScript 動態載入 。
+
+
+知識來源替換：決定不再進行網頁爬蟲，改為使用 **30 篇手動準備的機車保險文章（.txt 檔）**作為知識來源 。
+
+
+
+src/preprocess.py 和 src/build_vector_db.py 的讀取邏輯已修改為直接讀取 data/raw_html/ 下的 .txt 檔案 。
+
+
+
+Git 大檔案追蹤：解決 git push 時發生的 GH001: Large files detected 錯誤 。
+
+
+修正：更新 .gitignore 忽略 /rag_env/ 和 /venv/，並執行 git rm -r --cached rag_env 移除追蹤 。
+
+
+Git 歷史衝突：解決 fatal: refusing to merge unrelated histories 錯誤，使用 git pull origin main --allow-unrelated-histories 成功強制合併 。
+
+階段 II：LLM 與套件兼容性
+
+LangChain 移除：為解決 ModuleNotFoundError: No module named 'langchain.text_splitter' 問題 ，決定移除 LangChain 。
+
+
+
+
+原因：LangChain 1.x 版本模組結構大改，舊版 CharacterTextSplitter 路徑不再存在 。
+
+
+
+FAISS 檢索修正：修正 build_vector_db.py，確保 embeddings/texts.npy 儲存的是正確的文章內容，而非專案依賴套件清單 。
+
+
+問題：檢索結果曾出現套件名稱（如 streamlit, faiss-cpu），導致 RAG 回答錯誤 。
+
+本地 LLM 選型與錯誤處理：
+
+
+ChatGLM 問題：嘗試使用 ChatGLM-6B/int4，但持續遇到 AttributeError: ChatGLMTokenizer has no attribute vocab_size 錯誤 。
+
+
+
+原因：ChatGLM 的自訂 Tokenizer 與 transformers 庫的 AutoTokenizer 不完全兼容 。
+
+
+解決方案：放棄 ChatGLM 專用載入方法，改用 公開、標準 HuggingFace Pipeline 。
+
+
+模型長度限制：為解決長 Prompt 導致的 ValueError: Input length of input_ids is... 警告 ，將 rag_engine.py 中的模型生成參數從 max_length=300 改為 max_new_tokens=150 。
+
+
+
+階段 III：部署與最終配置
+
+模型授權問題：嘗試使用 meta-llama/Llama-2-7b-chat-hf 等流行模型時，遭遇 401 Client Error: Unauthorized 錯誤 。
+
+
+原因：該模型為 Gated Repository，需要 Hugging Face 登入授權 。
+
+
+最終決定：模型鎖定為 公開、無 Gated 限制的輕量化 3B GPTQ 模型，確保 Streamlit 線上部署不會因授權失敗 。
+
+
+API 金鑰配置：
+
+
+src/rag_engine.py 已從 Streamlit 的 st.secrets 改回依賴本地 .env 檔案 讀取 OPENAI_API_KEY，以簡化本地開發流程 。
+
+同時，為了解決 OpenAI 額度問題，模型呼叫已從 gpt-3.5-turbo 升級為 gpt-4o-mini 。
+
+
+專案文件：新增完整的 README.md，詳細說明專案功能、技術棧與執行步驟 。
+
+3. 專案結構與執行流程
+3.1 檔案結構
+Bash
+
+HW4/
+├── data/
+│   └── raw_html/     # 30篇機車保險文章 .txt 檔案
+├── embeddings/
+│   ├── faiss_index.bin # FAISS 向量索引
+│   └── texts.npy     # 檢索文本陣列
+├── src/
+│   ├── preprocess.py   # 文章分塊與清理 (純 Python)
+│   ├── build_vector_db.py # 建立 FAISS 向量庫
+│   ├── rag_engine.py   # RAG 核心邏輯 (檢索+LLM生成)
+│   └── app.py        # Streamlit 互動介面
+├── .gitignore          # 忽略虛擬環境、快取、模型等
+└── requirements.txt    # 專案依賴套件清單
+3.2 執行指令
+
+安裝依賴：pip install -r requirements.txt 。
+
+
+建立向量庫：python src/build_vector_db.py 。
+
+
+啟動介面：streamlit run src/app.py 。
