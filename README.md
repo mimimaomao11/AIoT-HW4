@@ -1,5 +1,7 @@
 # 🏍️ 機車保險知識型 RAG 問答助手
 
+部屬網站：https://aiot-hw4-gd3hw6qcbqhsasktrcvwn4.streamlit.app/
+
 這是一個基於 RAG (Retrieval-Augmented Generation) 架構的問答應用程式，專門回答關於台灣機車保險（特別是強制險與第三人責任險）的相關問題。
 
 應用程式使用 Streamlit 建構前端介面，並透過 `sentence-transformers` 將知識庫文件轉換為向量，儲存在 FAISS 索引中。當使用者提出問題時，系統會先從索引中檢索最相關的文件片段，再將這些片段連同問題一起提交給 OpenAI 的大型語言模型（例如 `gpt-4o-mini`）以生成精確的回答。
