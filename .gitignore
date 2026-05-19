@@ -1,0 +1,17 @@
+# Python 快取
+__pycache__/
+*.pyc
+
+# 自動生成的 embedding 檔案（舊版 FAISS）
+/embeddings/*.bin
+/embeddings/*.npy
+
+# ChromaDB 持久化資料（本地建立，不納入版控）
+/embeddings/chroma_db/
+
+# 虛擬環境
+/rag_env/
+/venv/
+
+# Streamlit secrets（含 API 金鑰，絕對不要上傳）
+.streamlit/secrets.toml

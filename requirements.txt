@@ -1,0 +1,7 @@
+streamlit
+openai
+sentence-transformers
+numpy
+chromadb==0.4.24
+protobuf>=3.20.0,<4.0.0
+beautifulsoup4
